@@ -1,4 +1,4 @@
-package main
+package authnprovider
 
 import (
 	"encoding/base64"
@@ -6,10 +6,8 @@ import (
 	"strings"
 )
 
-type hackAuthn struct {
-}
+type hackAuthn struct{}
 
-// TODO Agree on the token/cookie that vince will pass
 func (a *hackAuthn) Authenticate(req *http.Request) (bool, string, []string, error) {
 	user, groupsIMeanPassword, ok := req.BasicAuth()
 	if ok {

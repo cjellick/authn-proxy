@@ -38,7 +38,7 @@ func run() {
 	conf := config.GetManager(ctx)
 
 	if conf.Get("log.level") != "" {
-		l, err := logrus.ParseLevel(c.Get("log.level"))
+		l, err := logrus.ParseLevel(conf.Get("log.level"))
 		if err == nil {
 			logrus.SetLevel(l)
 		}

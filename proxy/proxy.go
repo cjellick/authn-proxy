@@ -37,6 +37,7 @@ func NewReverseProxy(ctx context.Context) (http.Handler, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "error determining backend")
 	}
+	logrus.Infof("Using backend scheme: %v, backendHost: %v", backendScheme, backendHost)
 
 	director := func(req *http.Request) {
 		req.URL.Scheme = backendScheme
@@ -55,8 +56,9 @@ func NewReverseProxy(ctx context.Context) (http.Handler, error) {
 func getBackendConfig(c *config.Manager) (string, string, http.RoundTripper, error) {
 	scheme := c.Get("backend.scheme")
 	host := c.Get("backend.host")
+	caCertPath := ""
 	if scheme == "" || host == "" {
-		logrus.Debugf("config properties backend.host or backend.scheme. Assuming in-cluster configuration")
+		logrus.Infof("config properties backend.host or backend.scheme. Assuming in-cluster configuration")
 		kubeConfig, err := rest.InClusterConfig()
 		if err != nil {
 			return "", "", nil, err
@@ -67,23 +69,30 @@ func getBackendConfig(c *config.Manager) (string, string, http.RoundTripper, err
 		if err != nil {
 			return "", "", nil, errors.Wrap(err, "problem parsing kubeconfig url")
 		}
-
-		return u.Scheme, u.Host, kubeConfig.Transport, nil
+		scheme = u.Scheme
+		host = u.Host
+		caCertPath = kubeConfig.CAFile
 	}
-	if caCert := c.Get("backend.ca.cert.path"); caCert != "" {
-		caCert, err := ioutil.ReadFile(caCert)
-		if err != nil {
-			return "", "", nil, errors.Wrapf(err, "problem reading ca cert file %v", caCert)
-		}
 
-		pool := x509.NewCertPool()
-		pool.AppendCertsFromPEM(caCert)
-		t := &http.Transport{
-			TLSClientConfig: &tls.Config{
-				RootCAs: pool,
-			},
-		}
-		return scheme, host, t, nil
+	if caCertPath == "" && c.Get("backend.ca.cert.path") != "" {
+		caCertPath = c.Get("backend.ca.cert.path")
 	}
-	return scheme, host, http.DefaultTransport, nil
+
+	if caCertPath == "" {
+		return scheme, host, http.DefaultTransport, nil
+	}
+
+	caCert, err := ioutil.ReadFile(caCertPath)
+	if err != nil {
+		return "", "", nil, errors.Wrapf(err, "problem reading ca cert file %v", caCert)
+	}
+
+	pool := x509.NewCertPool()
+	pool.AppendCertsFromPEM(caCert)
+	t := &http.Transport{
+		TLSClientConfig: &tls.Config{
+			RootCAs: pool,
+		},
+	}
+	return scheme, host, t, nil
 }

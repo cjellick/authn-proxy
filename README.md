@@ -12,18 +12,30 @@ An authentication proxy that usages kubernetes impersonation to forward requests
 
 For running locally:
 ```
-authn-proxy --backend-addr 192.168.43.231:8443 --backend-scheme https --frontend-http-addr 127.0.0.1:9999 --ca-cert-path ~/.minikube/ca.crt --token-path token --frontend-https-addr 127.0.0.1:9443 --frontend-ssl-cert-path selfsigned.crt --frontend-ssl-key-path selfsigned.key
+TOKEN_PATH=<path to file> CONFIG_PATH=<path to file> authn-proxy
 ```
 
-If you're running it inside of a k8s pod that has a service account configured, you can drop several of the paramters:
+Both env vars can be omitted and default paths will be assumed:
+- `TOKEN_PATH` - This should point to a file whose contents is a k8s service account token with cluster-admin level privileges. Defualt: `/var/run/secrets/kubernetes.io/serviceaccount/token`
+- `CONFIG_PATH` - This should point to a properties file that containing additional params need to run the server. Default: `/var/run/config/cattle.io/config`
+
+
+Here's what should be in the `CONFIG_PATH` file:
 ```
-authn-proxy --frontend-http-addr :9999 --frontend-https-addr :9443 --frontend-ssl-cert-path selfsigned.crt --frontend-ssl-key-path selfsigned.key
+log.level=debug
+
+frontend.http.host=127.0.0.1:9999
+frontend.https.host=127.0.0.1:9443
+frontend.ssl.cert.path=selfsigned.crt
+frontend.ssl.key.path=selfsigned.key
+
+backend.scheme=https
+backend.host=192.168.43.231:8443 
+backend.ca.cert.path=/home/cjellick/.minikube/ca.crt
 ```
+**NOTE**: `backend.scheme`, `backend.host`, & `backend.ca.cert` are **OPTIONAL** if you are running inside a k8s pod configured with an appropriate svc account. If omitted, the relevant information will be obtained via `rest.InClusterConfigi()` (which gets it from /var/run/secrets/kubernetes.io/serviceaccount).
 
-Obviously, if you're running in a k8s pod and want to serve on https, you need to get the crt and key files into the pod. You can choose to not run the https server by dropping the frontend-https-\* parameters
-
-Note that I haven't really tested running inside a pod yet.
-
+For the frontend.ssl.* params, obviously, if you're running in a k8s pod and want to serve on https, you need to get the crt and key files into the pod. You can choose to not run the https server by dropping the frontend-https-\* parameters, but kubectl won't send authn headers if the endpoint is http.
 
 ### Using for (fake) authentication
 
@@ -56,6 +68,8 @@ users:
     password: group1:group2
     username: cjellick
 ```
+If running in a k8s pod, the cluster.server value will need updated to the IP of the host and port the pod is running on.
+
 
 Here's a(n interactive) one-liner for generating the self-signed cert files:
 ```

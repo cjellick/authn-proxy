@@ -17,7 +17,7 @@ TOKEN_PATH=<path to file> CONFIG_PATH=<path to file> authn-proxy
 
 Both env vars can be omitted and default paths will be assumed:
 - `TOKEN_PATH` - This should point to a file whose contents is a k8s service account token with cluster-admin level privileges. Defualt: `/var/run/secrets/kubernetes.io/serviceaccount/token`
-- `CONFIG_PATH` - This should point to a properties file that containing additional params need to run the server. Default: `/var/run/config/cattle.io/config`
+- `CONFIG_PATH` - This should point to a properties file that containing additional params need to run the server. Default: `/var/run/cattle.io/config/server.properties`
 
 
 Here's what should be in the `CONFIG_PATH` file:

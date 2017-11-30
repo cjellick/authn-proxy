@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	configPath = "/var/run/config/cattle.io/config"
+	configPath = "/var/run/cattle.io/config/server.properties"
 )
 
 func NewReverseProxy(ctx context.Context) (http.Handler, error) {

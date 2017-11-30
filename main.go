@@ -19,7 +19,7 @@ func main() {
 	app.Run(os.Args)
 }
 
-func run() {
+func run(c *cli.Context) {
 	logrus.Infof("Configuring...")
 
 	ctx, cancelF := context.WithCancel(context.Background())
@@ -47,7 +47,7 @@ func run() {
 	httpsHost := conf.Get("frontend.https.host")
 	if httpsHost != "" {
 		go func() {
-			logrus.Infof("Starting https server listening on %v. Backend %v", httpsHost)
+			logrus.Infof("Starting https server listening on %v.", httpsHost)
 			err := http.ListenAndServeTLS(httpsHost, conf.Get("frontend.ssl.cert.path"), conf.Get("frontend.ssl.key.path"), handler)
 			logrus.Fatalf("https server exited. Error: %v", err)
 		}()

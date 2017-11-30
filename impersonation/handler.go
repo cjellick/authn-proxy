@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"os"
 
+	"strings"
+
 	"github.com/pkg/errors"
 	"github.com/rancher/authn-proxy/authnprovider"
 	"github.com/rancher/authn-proxy/config"
@@ -73,7 +75,7 @@ func (h authHeaderHandler) ServeHTTP(rw http.ResponseWriter, req *http.Request) 
 		req.Header.Add("Impersonate-Group", group)
 	}
 
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", h.config.Get("token")))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", strings.TrimSpace(h.config.Get("token"))))
 
 	h.next.ServeHTTP(rw, req)
 }

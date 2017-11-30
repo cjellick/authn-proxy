@@ -37,12 +37,14 @@ func GetManager(ctx context.Context) *Manager {
 
 	if m == nil {
 		m = &Manager{
-			ctx: ctx,
+			ctx:          ctx,
+			m:            &sync.RWMutex{},
+			config:       map[string]string{},
+			watchedFiles: map[string]bool{},
 		}
 	}
-	return &Manager{
-		ctx: ctx,
-	}
+
+	return m
 }
 
 type Manager struct {

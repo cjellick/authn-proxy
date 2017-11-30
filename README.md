@@ -72,6 +72,8 @@ If running in a k8s pod, the cluster.server value will need updated to the IP of
 
 ## Deploying
 For reference, here's a deployment that works (assuming the configmaps, secrets, and svc-accout are created:
+
+**Note:** You'll have to update your kube-config to use the NodePort that k8s selected
 ```
 apiVersion: apps/v1beta2
 kind: Deployment

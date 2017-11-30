@@ -70,6 +70,63 @@ users:
 ```
 If running in a k8s pod, the cluster.server value will need updated to the IP of the host and port the pod is running on.
 
+## Deploying
+For reference, here's a deployment that works (assuming the configmaps, secrets, and svc-accout are created:
+```
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: authn-proxy
+  labels:
+    svc: autn-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      svc: authn-proxy
+  template:
+    metadata:
+      labels:
+        svc: authn-proxy
+    spec:
+      serviceAccountName: superuser
+      containers:
+        - name: authn-proxy
+          image: cjellick/authn-proxy:latest
+          volumeMounts:
+          - name: certs
+            mountPath: /var/run/cattle.io/certs
+            readOnly: true
+          - name: server-props
+            mountPath: /var/run/cattle.io/config
+            readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: selfsignedcerts1
+      - name: server-props
+        configMap:
+          name: serverproperties1
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: authn-svc
+  labels:
+    svc: authn-proxy
+spec:
+  type: NodePort
+  selector:
+    svc: authn-proxy
+  ports:
+  - port: 9443
+    protocol: TCP
+    name: https
+  - port: 9999
+    protocol: TCP
+    name: http
+```
+
 
 Here's a(n interactive) one-liner for generating the self-signed cert files:
 ```

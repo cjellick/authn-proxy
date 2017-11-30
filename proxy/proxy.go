@@ -69,22 +69,21 @@ func getBackendConfig(c *config.Manager) (string, string, http.RoundTripper, err
 		}
 
 		return u.Scheme, u.Host, kubeConfig.Transport, nil
-	} else {
-		if caCert := c.Get("backend.ca.cert.path"); caCert != "" {
-			caCert, err := ioutil.ReadFile(caCert)
-			if err != nil {
-				return "", "", nil, errors.Wrapf(err, "problem reading ca cert file %v", caCert)
-			}
-
-			pool := x509.NewCertPool()
-			pool.AppendCertsFromPEM(caCert)
-			t := &http.Transport{
-				TLSClientConfig: &tls.Config{
-					RootCAs: pool,
-				},
-			}
-			return scheme, host, t, nil
-		}
-		return scheme, host, http.DefaultTransport, nil
 	}
+	if caCert := c.Get("backend.ca.cert.path"); caCert != "" {
+		caCert, err := ioutil.ReadFile(caCert)
+		if err != nil {
+			return "", "", nil, errors.Wrapf(err, "problem reading ca cert file %v", caCert)
+		}
+
+		pool := x509.NewCertPool()
+		pool.AppendCertsFromPEM(caCert)
+		t := &http.Transport{
+			TLSClientConfig: &tls.Config{
+				RootCAs: pool,
+			},
+		}
+		return scheme, host, t, nil
+	}
+	return scheme, host, http.DefaultTransport, nil
 }

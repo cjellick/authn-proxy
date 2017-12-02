@@ -95,6 +95,7 @@ spec:
       containers:
         - name: authn-proxy
           image: cjellick/authn-proxy:latest
+          imagePullPolicy: Always
           volumeMounts:
           - name: certs
             mountPath: /var/run/cattle.io/certs

@@ -9,12 +9,13 @@ SUFFIX=""
 
 cd $(dirname $0)/../package
 
-TAG=${TAG:-${VERSION}${SUFFIX}}
-REPO=${REPO:-rancher}
+TAG=dev
+#TAG=${TAG:-${VERSION}${SUFFIX}}
+REPO=${REPO:-cjellick}
 
-if echo $TAG | grep -q dirty; then
-    TAG=dev
-fi
+#if echo $TAG | grep -q dirty; then
+#    TAG=dev
+#fi
 
 cp ../bin/authn-proxy .
 

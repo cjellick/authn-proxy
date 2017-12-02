@@ -249,4 +249,8 @@ users:
     username: cjellick
 ```
 
-
+Finally, there's a bug () in 1.8 where not all swagger api paths are allowed. This results in a warning in kubectl. You can work around with this:
+```
+(authn-proxy)crs$ kubectl create clusterrole swagger --verb=get --non-resource-url=/swagger-2.0.0.pb-v1 --non-resource-url=/swagger.json
+(authn-proxy)crs$ kubectl create clusterrolebinding swagger --clusterrole=swagger --group=system:authenticated --group=system:unauthenticated
+```

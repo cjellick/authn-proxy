@@ -94,7 +94,7 @@ spec:
       serviceAccountName: superuser
       containers:
         - name: authn-proxy
-          image: cjellick/authn-proxy:latest
+          image: cjellick/authn-proxy:dev
           imagePullPolicy: Always
           volumeMounts:
           - name: certs

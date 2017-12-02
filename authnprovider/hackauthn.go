@@ -11,7 +11,9 @@ type hackAuthn struct{}
 func (a *hackAuthn) Authenticate(req *http.Request) (bool, string, []string, error) {
 	user, groupsIMeanPassword, ok := req.BasicAuth()
 	if ok {
-		groups := strings.Split(groupsIMeanPassword, ",")
+		parts := strings.Split(groupsIMeanPassword, ",")
+		groups := []string{"system:authenticated"}
+		groups = append(groups, parts...)
 		return true, user, groups, nil
 	}
 
@@ -30,9 +32,9 @@ func (a *hackAuthn) Authenticate(req *http.Request) (bool, string, []string, err
 
 	parts := strings.SplitN(string(bytes), ":", 2)
 	user = parts[0]
-	groups := []string{}
+	groups := []string{"system:authenticated"}
 	if len(parts) == 2 {
-		groups = strings.Split(parts[1], ",")
+		groups = append(groups, strings.Split(parts[1], ",")...)
 	}
 	return true, user, groups, nil
 }

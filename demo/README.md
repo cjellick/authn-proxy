@@ -63,7 +63,7 @@ kubectl --kubeconfig ./kube-config --username=craig-the-dev --password=developer
 the server doesn't have a resource type "pods"
 ```
 
-Now, create a ProjectRoletemplate representing the builtin role edit
+Now, create a ProjectRoletemplate for basic CRUD access to the important resources. This will one day be a builtin role, saving you this step
 ```
 kubectl --kubeconfig ./kube-config --username=dave-the-admin --password=pass create -f role-edit.yaml
 

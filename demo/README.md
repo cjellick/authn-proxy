@@ -264,7 +264,7 @@ kubectl  --kubeconfig ./kube-config --username=craig-the-dev --password=develope
 Error from server (Forbidden): error when creating "pod-priv.yaml": pods is forbidden: User "craig-the-dev" cannot create pods in the namespace "prod"
 ```
 
-You could authorize similar policies for an ops team in the production environment, but doing so here would be redundant. We'll skip ahead.
+You could authorize similar policies for an ops team in the production project, but doing so here would be redundant. We'll skip ahead.
 
 The final thing that Dave the admin wants to do is enable a PodSecurityPolicy in both projects. No more privileged containers!
 

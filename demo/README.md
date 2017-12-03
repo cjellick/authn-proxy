@@ -257,8 +257,151 @@ spec:
     stdin: true
     securityContext:
       privileged: true
+      allowPrivilegeEscalation: true
 
 ### The same command in prod fails:
 kubectl  --kubeconfig ./kube-config --username=craig-the-dev --password=developers -n prod create -f pod-priv.yaml
 Error from server (Forbidden): error when creating "pod-priv.yaml": pods is forbidden: User "craig-the-dev" cannot create pods in the namespace "prod"
 ```
+
+You could authorize similar policies for an ops team in the production environment, but doing so here would be redundant. We'll skip ahead.
+
+The final thing that Dave the admin wants to do is enable a PodSecurityPolicy in both projects. No more privileged containers!
+
+**Warning**: PodSecurityPolcies are tricky. Once you enable the PSP admission controller, it will start denying all pod creations unless the user, service account, or controller creating them is explicitly authorized with a PSP.
+
+Kubernetes recommends you get PSPs in place before turning on the admission controller, so lets do that.
+
+First, create a PodSecurityPolicyTemplate:
+```
+kubectl --kubeconfig ./kube-config --username=dave-the-admin --password=pass create -f pspt.yaml
+
+### Contents of pspt.yaml
+apiVersion: authorization.cattle.io/v1
+kind: PodSecurityPolicyTemplate
+metadata:
+  name: restrictive
+spec:
+  privileged: false
+  fsGroup:
+    rule: RunAsAny
+  runAsUser:
+    rule: MustRunAsNonRoot
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - '*'
+  hostPID: false
+  hostIPC: false
+  hostNetwork: false
+---
+apiVersion: authorization.cattle.io/v1
+kind: PodSecurityPolicyTemplate
+metadata:
+  name: permissive
+spec:
+  privileged: true
+  allowPrivilegeEscalation: true
+  fsGroup:
+    rule: RunAsAny
+  runAsUser:
+    rule: RunAsAny
+  seLinux:
+    rule: RunAsAny
+  supplementalGroups:
+    rule: RunAsAny
+  volumes:
+  - '*'
+  hostPID: false
+  hostIPC: false
+  hostNetwork: false
+```
+
+Next, create role templates that references those PSP templates
+```
+kubectl --kubeconfig kube-config --username=dave-the-admin --password=pass create -f psp-roles.yaml
+
+### Contents of psp-roles.yaml
+apiVersion: authorization.cattle.io/v1
+kind: ProjectRoleTemplate
+metadata:
+  name: restrictive-psp
+rules:
+- apiGroups:
+  - extensions
+  resources:
+  - podsecuritypolicies
+  resourceNames:
+  - restrictive
+  verbs:
+  - use
+---
+apiVersion: authorization.cattle.io/v1
+kind: ProjectRoleTemplate
+metadata:
+  name: permissive-psp
+rules:
+- apiGroups:
+  - extensions
+  resources:
+  - podsecuritypolicies
+  resourceNames:
+  - permissive
+  verbs:
+  - use
+```
+
+Next, create rolebindings
+```
+kubectl --kubeconfig kube-config --username=dave-the-admin --password=pass create -f binding-restrictive-psp.yaml
+
+### Contents of binding-restrictive-psp.yaml
+apiVersion: authorization.cattle.io/v1
+kind: ProjectRoleTemplateBinding
+metadata:
+  name: restrictive-psp-binding
+subject:
+  kind: Group
+  name: developers
+projectName: development
+projectRoleTemplateName: restrictive-psp
+```
+
+Now we can turn on the feature:
+```
+minikube -p demo start --vm-driver kvm --extra-config=apiserver.Authorization.Mode=RBAC --extra-config=apiserver.Admission.PluginNames=NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota,DefaultTolerationSeconds,PodSecurityPolicy
+```
+
+And try to create a privileged pod in the development namespace. We are correctly blocked:
+```
+kubectl  --kubeconfig ./kube-config --username=craig-the-dev --password=developers -n dev create -f pod-priv.yaml
+Error from server (Forbidden): error when creating "pod-priv.yaml": pods "ubuntu" is forbidden: unable to validate against any pod security policy: [spec.containers[0].securityContext.privileged: Invalid value: true: Privileged containers are not allowed]
+```
+
+Finally, let's create a permissive for Dave and see that it works
+```
+kubectl --kubeconfig kube-config --username=dave-the-admin --password=pass create -f binding-permissive-psp.yaml
+
+### Contents of binding-permissive-psp.yaml
+apiVersion: authorization.cattle.io/v1
+kind: ProjectRoleTemplateBinding
+metadata:
+  name: permissive-psp-binding
+subject:
+  kind: User
+  name: dave-the-admin
+projectName: development
+projectRoleTemplateName: permissive-psp
+
+```
+
+And see that Dave can create privileged containers:
+```
+kubectl  --kubeconfig ./kube-config --username=dave-the-admin --password=pass  -n dev create -f pod-priv.yaml
+pod "ubuntu" created
+
+```
+
+Fin.

@@ -1,8 +1,8 @@
 ## Prereqs
 
-Running k8s cluster with RBAC turned on
+Running k8s cluster with RBAC turned on and the PodSecurityPolicy admission controller enabled
 ```
-minikube --profile demo start --vm-driver kvm --extra-config=apiserver.Authorization.Mode=RBAC
+minikube -p demo start --vm-driver kvm --extra-config=apiserver.Authorization.Mode=RBAC --extra-config=apiserver.Admission.PluginNames=NamespaceLifecycle,LimitRanger,ServiceAccount,PersistentVolumeLabel,DefaultStorageClass,ResourceQuota,DefaultTolerationSeconds,PodSecurityPolicy
 ```
 
 Assert RBAC is on and an unauthorized user cannot access the cluster:
